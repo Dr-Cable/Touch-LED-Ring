@@ -34,6 +34,7 @@ void draw()
     PVector fingerPos = leap.getTip(finger);
     //ellipse(fingerPos.x, fingerPos.y, 20, 20);
     image(dot, fingerPos.x - dotSize/2, fingerPos.y - dotSize/2, dotSize, dotSize); 
+    //System.out.println("fingerPos.x : ");// fingerPos.x \n "fingerPos.y : " fingerPos.y);
 }
 
 }
