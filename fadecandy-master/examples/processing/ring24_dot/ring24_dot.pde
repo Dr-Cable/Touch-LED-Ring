@@ -21,6 +21,7 @@ void draw()
 
   // Draw the image, centered at the mouse location
   float dotSize = width * 0.6;
+  tint (255,0,0);
   image(dot, mouseX - dotSize/2, mouseY - dotSize/2, dotSize, dotSize);
 }
 

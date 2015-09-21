@@ -228,8 +228,9 @@ public void SOCanzeigeRecognized() {
 }
 
 public void WartezeitRecognized() {
-  tint(255, 200, 51); //orange
-      //tint(0, 0, 255); //blau
+  //tint(255, 0, 0); //rot
+  //tint(255, 200, 51); //orange
+      tint(0, 204, 204); //blau
       drawDot(angleLED*currentTime*0.01, width*0.045, 40); //width*0.045, 2
 }
 
