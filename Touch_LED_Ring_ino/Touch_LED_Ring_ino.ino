@@ -1,20 +1,4 @@
-
-
-
-/*************************************************************************************************************
-  This is an example for Hover. 
-  
-  Hover is a development kit that lets you control your hardware projects in a whole new way.  
-  Wave goodbye to physical buttons. Hover detects hand movements in the air for touch-less interaction.  
-  It also features five touch-sensitive regions for even more options.
-  Hover uses I2C and 2 digital pins. It is compatible with Arduino, Raspberry Pi and more.
-
-  Hover can be purchased here: http://www.hoverlabs.co
-  
-  Written by Emran Mahbub and Jonathan Li for Hover Labs.  
-  BSD license, all text above must be included in any redistribution
-  ===========================================================================
-
+/*
 #   HOOKUP GUIDE (For Arduino)
   
     =============================
@@ -24,9 +8,9 @@
    | +++++++++++++++++++++++++++ |      #  PIN 4 - SDA        ----    SDA pin
    | +                         + |      #  PIN 5 - GND        ----    Ground Pin
    | +                         + |      #  PIN 6 - 3V3        ----    3V3 pin
-   | *                         + |      #  PIN 7 - TS         ----    Any Digital Pin.  This example uses Pin 5.
-   | *                         + |
-   | *                         + |
+   | +                         + |      #  PIN 7 - TS         ----    Any Digital Pin.  This example uses Pin 5.
+   | +                         + |
+   | +                         + |
    |_+++++++++++++++++++++++++++_|
    
   =============================================================================
@@ -107,6 +91,10 @@ Hover hover = Hover(ts, reset, GESTUREMODE, TOUCHMODE, TAPMODE, POSITIONMODE );
 // used when printing 3D position coordinates. Using a smaller interval will result in a 'spammy' console. Set to update every 150ms by default.  
 long interval = 200;        
 long previousMillis = 0;
+long waitTime = 80;
+long currentTime = 0;
+long loopTime = 0;
+
 
 //#define BUTTON_PIN   2    // Digital IO pin connected to the button.  This will be
                           // driven with a pull-up resistor so the switch should
@@ -114,7 +102,6 @@ long previousMillis = 0;
                           // transition the button press logic will execute.
 
 #define PIXEL_PIN    3    // Digital IO pin connected to the NeoPixels.
-
 #define PIXEL_COUNT 24
 
 // Parameter 1 = number of pixels in strip,  neopixel stick has 8
@@ -126,6 +113,15 @@ long previousMillis = 0;
 //   NEO_KHZ800  800 KHz bitstream (e.g. High Density LED strip), correct for neopixel stick
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
 
+boolean countUP = false;
+
+int StartLEDVK = 1;
+int StartLEDHK = 18;
+int Ladestartzeit = 1;
+int Ladedauer = 8;
+int istSOC = 3;
+int sollSOC = 16;
+int showSOC = istSOC;
 int newgestureID = 0;
 int oldgestureID = 0;
 int newgestureValue = 0;
@@ -135,6 +131,23 @@ int oldtouchID = 0;
 int newtouchValue = 0;
 int oldtouchValue = 0;
 int showType = 0;
+int activeFunction = 0;
+int k = 0;
+uint8_t Atmen = 0;
+uint32_t red = (255,0,0);
+uint32_t green = (0,255,0);
+uint32_t blue = (0,0,255);
+uint32_t white = (255,255,255);
+uint32_t Bred = (127,0,0);
+uint32_t Bgreen = (0,127,0);
+uint32_t Bblue = (0,0,127);
+uint32_t Bwhite = (127,127,127);
+uint32_t Lblue = (0,54,54);
+uint32_t orange = (127,54,0);
+
+
+
+
 
 void setup() {
   Serial.begin(9600);
@@ -145,11 +158,13 @@ void setup() {
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
 }
+
+
     
 void loop(void) {
   
   long currentMillis = millis();    // used for updating 3D position coordinates. Set to update every 150ms by default. 
-
+  long currentTime = millis();
   // read incoming data stream from Hover
   hover.readI2CData();
   
@@ -210,16 +225,15 @@ void loop(void) {
     switch(newgestureValue){
         case 0: showType = 0;
                    break;
-        case 1: showType = 3;
+        case 1: Wartezeit(strip.Color(127, 54, 0), strip.Color(255, 54, 0), 0, waitTime, 0); // Red
                    break;    
-        case 2: showType = 1;
+        case 2: Ladezeitanzeige(strip.Color(54, 54, 54), strip.Color(0, 54, 0), strip.Color(0, 0, 54), 255, 0, 0);
                    break;
-        case 3: showType = 2;
+        case 3: Ladezustandsanzeige(strip.Color(54, 54, 54), strip.Color(0, 54, 0), strip.Color(0, 54, 54), 255, 0, 0);
                    break;  
-        case 4: showType = 4;
+        case 4: Laden(strip.Color(0, 54, 0), 255, 0, 0);
                    break;                
-      }
-    startShow(showType);
+    }
     newgestureID = 0;
   }
   // Get current touch state.
@@ -230,7 +244,7 @@ void loop(void) {
   // Check double Tap from to
   if (newtouchID == 3 && oldtouchID == 0) {
     switch(newtouchValue){
-        case 0: showType = 0;
+        /*case 0: showType = 0;
                    break;
         case 1: showType = 3;
                    break;    
@@ -239,13 +253,14 @@ void loop(void) {
         case 3: showType = 2;
                    break;  
         case 4: showType = 4;
-                   break;                
-        case 5: showType = 4;
+                   break;*/                
+        case 5: Auffindleuchte(strip.Color(54, 54, 54), 0, 0, 0);
                    break;  
       }
-    startShow(showType);
+    //startShow(showType);
     newtouchID = 0;    
   }
+
    
   
   /* if (newState == LOW ) {
@@ -265,10 +280,135 @@ void loop(void) {
   // Set the last button state to the old state.
   oldgestureID = newgestureID;
   oldgestureValue = newgestureValue;
+  
+  //Animation Ladezeitanzeige
+  if(activeFunction == 2){
+    if (newtouchID == 1 && oldtouchID == 0) {
+      switch(newtouchValue){
+        case 3: if(Ladestartzeit < 26-Ladedauer) { 
+                  Ladestartzeit++;
+                  Ladezeitanzeige(strip.Color(54, 54, 54), strip.Color(0, 54, 0), strip.Color(0, 0, 54), 255, 0, 0);
+                }
+                if(Ladestartzeit+Ladedauer >=26){
+                  Ladestartzeit = 0;
+                  Ladedauer = 4;
+                }
+                   break;  
+        case 4: if(Ladedauer+Ladestartzeit <= 24) { 
+                    Ladedauer++;
+                    Ladezeitanzeige(strip.Color(54, 54, 54), strip.Color(0, 54, 0), strip.Color(0, 0, 54), 255, 0, 0);
+                  }
+                   break;                  
+      }
+    }
+  }
+  
+  //Animation soll SOC
+  if(activeFunction == 3) {
+    if (newtouchID == 1 && oldtouchID == 0) {
+      switch(newtouchValue){
+        case 3: if(sollSOC <= 17){
+                  sollSOC++;
+                  Ladezustandsanzeige(strip.Color(54, 54, 54), strip.Color(0, 54, 0), strip.Color(0, 54, 54), 255, 0, 0);
+                }
+                   break;  
+        case 4: if(sollSOC >= istSOC) {
+                  sollSOC--;
+                  Ladezustandsanzeige(strip.Color(54, 54, 54), strip.Color(0, 54, 0), strip.Color(0, 54, 54), 255, 0, 0);
+                }
+                   break;                  
+      }
+    //startShow(showType);
+    newtouchID = 0;    
+    }
+    if(showSOC <= istSOC) {
+    countUP = true;
+    delay(waitTime*2);
+    }
+    if(showSOC >= sollSOC) {
+    countUP = false;
+    delay(waitTime*2);
+    }
+    
+    if(currentTime - waitTime > loopTime && showSOC < sollSOC && countUP == true){
+      if(showSOC > 12){
+        strip.setPixelColor(showSOC, strip.Color(0, 0, 54));
+      }
+      else {
+        strip.setPixelColor(showSOC, strip.Color(0, 54, 0));
+      }
+      strip.show();
+      showSOC++;
+      loopTime = currentTime;
+    }
+    if(currentTime - waitTime > loopTime && showSOC > istSOC && countUP == false){
+      if(showSOC > 12){
+        strip.setPixelColor(showSOC, strip.Color(54, 54, 54));
+      }
+      else {
+        strip.setPixelColor(showSOC, strip.Color(0, 0, 0));
+      }
+      strip.show();
+      showSOC--;
+      loopTime = currentTime;
+    }
+  }
+  // Animation Wartezeit
+  if(activeFunction == 4) {
+    if(currentTime - waitTime > loopTime){
+      strip.setPixelColor(k+3, strip.Color(127, 54, 0));
+      strip.show();
+      strip.setPixelColor(k+2, strip.Color(255, 54, 0));
+      strip.show();
+      strip.setPixelColor(k+1, strip.Color(255, 54, 0));
+      strip.show();
+      strip.setPixelColor(k, strip.Color(127, 54, 0));
+      strip.show();
+      strip.setPixelColor(k-1, strip.Color(0, 0, 0));
+      strip.show();
+      k++;
+      if(k >= 24) {
+        k=0;
+        strip.setPixelColor(23, strip.Color(0, 0, 0));
+        strip.show();
+        //delay(waitTime);
+      }
+      loopTime = currentTime;
+    }
+  }
+  
+  
+    // Animation Laden
+  if(activeFunction == 5) {
+     if(Atmen <= 10) {
+    countUP = true;
+    delay(waitTime);
+    }
+    if(Atmen >= 120) {
+    countUP = false;
+    delay(waitTime);
+    }
+    if(currentTime - (10) > loopTime) {
+      for(uint16_t i = 0; i < strip.numPixels(); i++){
+        strip.setPixelColor(i, strip.Color(0, Atmen , 0));
+        strip.show();
+      }
+    if(countUP == true) {
+      Atmen = Atmen+5;
+    }
+    if(countUP == false) {
+      Atmen = Atmen-5;
+    }
+    loopTime = currentTime;  
+    }
+  }
+
+
+   
 }
 
 
-void startShow(int i) {
+/*void startShow(int i) {
   switch(i){
     case 0: colorWipe(strip.Color(0, 0, 0), 50);    // Black/off
             break;
@@ -293,9 +433,164 @@ void startShow(int i) {
     case 10: theaterChaseRainbow(50);
             break;
   }
+}*/
+
+
+//Auffindleuchte Übergabe Farbe, Helligkeit, Delay, Lage 1. Pixel
+void Auffindleuchte(uint32_t color, uint8_t brightness, uint8_t wait, uint8_t StartLED) {
+  activeFunction = 1;
+  for(uint16_t i = 0; i < strip.numPixels(); i++){
+    strip.setPixelColor(i, 0);
+    strip.show();
+    delay(wait);
+  }
+  for(uint16_t i = 0; i < strip.numPixels(); i++){
+    strip.setPixelColor(i, color);
+    strip.show();
+    delay(wait);
+    /*Serial.print("Auffindleuchte: "); Serial.print(i); Serial.print("\t");
+    Serial.print("Farbe: "); Serial.print(color); Serial.print("\t");
+    Serial.print("Helligkeit: "); Serial.print(brightness); Serial.print("\t");
+    Serial.print("Wait: "); Serial.print(wait); Serial.print("\t");
+    Serial.print("StartLED: "); Serial.print(StartLED); Serial.println("");
+    */
+  }
 }
 
-void Auffindleuchte(uint32_t
+//Ladezeitanzeige Übergabe Farbe, Helligkeit, Delay, Lage 1. StartPixel
+void Ladezeitanzeige(uint32_t color1, uint32_t color2, uint32_t color3, uint8_t brightness, uint8_t wait, uint8_t StartLED) {
+  activeFunction = 2;
+  for(uint16_t i = 0; i < strip.numPixels(); i++){
+    strip.setPixelColor(i, 0);
+    strip.show();
+    //delay(wait);
+  }
+  for(uint16_t i = 0; i < strip.numPixels(); i++){
+    strip.setPixelColor(i, strip.Color(54,54,54));
+    strip.show();
+    //delay(wait);
+  }
+  for(uint16_t j = Ladestartzeit; j < Ladestartzeit+Ladedauer; j++){
+    strip.setPixelColor(j, strip.Color(0,127,0));
+    strip.show();
+    //delay(wait);
+  }
+  for(uint16_t k = 0; k < strip.numPixels(); k=k+6){
+    strip.setPixelColor(k, strip.Color(0,0,127));
+    strip.setPixelColor(k+1, strip.Color(0,0,127));
+    strip.show();
+    //delay(wait);
+    /*Serial.print("Ladezeitanzeige: "); Serial.print(k); Serial.print("\t");
+    Serial.print("Farbe: "); Serial.print(color3); Serial.print("\t");
+    Serial.print("Helligkeit: "); Serial.print(brightness); Serial.print("\t");
+    Serial.print("Wait: "); Serial.print(wait); Serial.print("\t");
+    Serial.print("StartLED: "); Serial.print(StartLED); Serial.println("");
+    */
+  }
+}
+
+
+//Ladezustandsanzeige Übergabe Farbe, Helligkeit, Delay, Lage 1. StartPixel
+void Ladezustandsanzeige(uint32_t color1, uint32_t color2, uint32_t color3, uint8_t brightness, uint8_t wait, uint8_t StartLED) {
+  activeFunction = 3;
+  showSOC = istSOC;
+  for(uint16_t i = 0; i < strip.numPixels(); i++){
+    strip.setPixelColor(i, 0);
+    strip.show();
+    delay(wait);
+  }
+  for(uint16_t i = 13; i < strip.numPixels(); i++){
+    strip.setPixelColor(i, color1);
+    strip.show();
+    delay(wait);
+  }
+  for(uint16_t i = 0; i < 1; i++){
+    strip.setPixelColor(i, color1);
+    strip.show();
+    delay(wait);
+  }
+  for(uint16_t j = 1; j < istSOC; j++){
+    strip.setPixelColor(j, color2);
+    strip.show();
+    delay(wait);
+  }
+  //if(currentTime - waitTime > loopTime && k < sollSOC && sollSoc
+  
+  /*
+  for(uint16_t k = istSOC; k < sollSOC; k++){
+    strip.setPixelColor(k, color3);
+    strip.show();
+    delay(100);
+  }
+  for(uint16_t k = sollSOC; k > istSOC; k--){
+    strip.setPixelColor(k, 0);
+    strip.show();
+    delay(100);
+    
+    Serial.print("Ladezeitanzeige: "); Serial.print(k); Serial.print("\t");
+    Serial.print("Farbe: "); Serial.print(color3); Serial.print("\t");
+    Serial.print("Helligkeit: "); Serial.print(brightness); Serial.print("\t");
+    Serial.print("Wait: "); Serial.print(wait); Serial.print("\t");
+    Serial.print("StartLED: "); Serial.print(StartLED); Serial.println("");
+    
+  }*/
+}
+
+
+void Wartezeit(uint32_t color1, uint32_t color2, uint8_t brightness, uint8_t wait, uint8_t StartLED) {
+  activeFunction = 4;
+  for(uint16_t i = 0; i < strip.numPixels(); i++){
+    strip.setPixelColor(i, 0);
+    strip.show();
+    //delay(wait);
+  }
+  /*for (int j=0; j<10; j++) {
+    for(uint16_t i = 0; i < strip.numPixels()+4; i++){
+      strip.setPixelColor(i, color1);
+      strip.show();
+      strip.setPixelColor(i-1, color2);
+      strip.show();
+      strip.setPixelColor(i-2, color2);
+      strip.show();
+      strip.setPixelColor(i-3, color1);
+      strip.show();
+      strip.setPixelColor(i-4, 0);
+      strip.show();
+      delay(wait);
+    Serial.print("Auffindleuchte: "); Serial.print(i); Serial.print("\t");
+    Serial.print("Farbe: "); Serial.print(color); Serial.print("\t");
+    Serial.print("Helligkeit: "); Serial.print(brightness); Serial.print("\t");
+    Serial.print("Wait: "); Serial.print(wait); Serial.print("\t");
+    Serial.print("StartLED: "); Serial.print(StartLED); Serial.println("");
+    
+    }
+  }*/
+}
+
+
+void Laden(uint32_t color, uint8_t brightness, uint8_t wait, uint8_t StartLED) {
+  activeFunction = 5;
+  for(uint16_t i = 0; i < strip.numPixels(); i++){
+    strip.setPixelColor(i, 0);
+    strip.show();
+    //delay(wait);
+  }
+  
+  
+  /*for(uint16_t i = 0; i < strip.numPixels(); i++){
+    strip.setPixelColor(i, color);
+    strip.show();
+    delay(wait);
+    Serial.print("Auffindleuchte: "); Serial.print(i); Serial.print("\t");
+    Serial.print("Farbe: "); Serial.print(color); Serial.print("\t");
+    Serial.print("Helligkeit: "); Serial.print(brightness); Serial.print("\t");
+    Serial.print("Wait: "); Serial.print(wait); Serial.print("\t");
+    Serial.print("StartLED: "); Serial.print(StartLED); Serial.println("");
+    
+  }*/
+}
+
+
 
 // Fill the dots one after the other with a color
 void colorWipe(uint32_t c, uint8_t wait) {
